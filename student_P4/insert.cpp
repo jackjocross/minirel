@@ -3,6 +3,8 @@
 #include "index.h"
 #include <iostream>
 #include <cstring>
+#include <cstdlib>
+#include "utility.h"
 
 
 /*
@@ -18,51 +20,64 @@ Status Updates::Insert(const string& relation,      // Name of the relation
                        const attrInfo attrList[])   // Value of attributes specified in INSERT statement
 {
     /* Your solution goes here */
-    AttrDesc *insertAttr;
-    Record rec;
-    rec.length = 0;
+    AttrDesc *insertAttr = new AttrDesc[attrCnt];
+    Record *rec = new Record();
+    rec->length = 0;
     int insertCnt = attrCnt;
     Status retStatus = attrCat->getRelInfo(relation, insertCnt, insertAttr);
+
     if (retStatus != OK)
     {
     	error.print(retStatus);
     	return retStatus;
     }
 
+    for (int i = 0; i < attrCnt; ++i)
+    {
+        rec->length += insertAttr[i].attrLen;
+    }
+
+    rec->data = (char *) malloc(rec->length);
+
+    if (rec->data == NULL) 
+        cout << "data is null\n";
+
     for (int i = 0;i < attrCnt;++i)
 	{
 		for (int j = 0;j < attrCnt;++j)
 		{
-			/*
-			if (j == attrCnt)
-			{
-				return
-				CHECK ERRORRRSSSSSSSS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-			}
-			*/
+			//CHECK ERRORS
+
 			string attrOne = insertAttr[i].attrName;
 			string attrTwo = attrList[j].attrName;
+
 			if (attrOne == attrTwo)
 			{
-				rec.length += attrList[i].attrLen;
-				memcpy(&rec.data + insertAttr[i].attrOffset, attrList[j].attrValue, attrList[j].attrLen);
+               
+				memcpy(rec->data + insertAttr[i].attrOffset, attrList[j].attrValue, insertAttr[i].attrLen);
 				break;
 			}
 		}
     }
 
     RID inRid;
-    Status insertStatus = attrCat->insertRecord(rec, inRid);
+    Status insertStatus; 
+    HeapFile heapInsert(relation, insertStatus);
+    insertStatus = heapInsert.insertRecord(*rec, inRid);
+    //Utilities u;
+    //u.Print(relation);
+    
 
-    for (int k = 0;k < attrCnt;++k)
+    /*for (int k = 0;k < attrCnt;++k)
     {
     	if (insertAttr[k].indexed == true)
     	{
     		Status indexInsert = attrCat->insertEntry(VALUE, RID);
     	}
-    }
+    }*/
 
-
+    delete [] insertAttr;
+    delete rec;
 
     return OK;
 }
