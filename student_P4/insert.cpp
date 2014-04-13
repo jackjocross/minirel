@@ -25,6 +25,7 @@ Status Updates::Insert(const string& relation,      // Name of the relation
     rec->length = 0;
     int insertCnt = attrCnt;
     Status retStatus = attrCat->getRelInfo(relation, insertCnt, insertAttr);
+    int indexComp[attrCnt];
 
     if (retStatus != OK)
     {
@@ -53,8 +54,9 @@ Status Updates::Insert(const string& relation,      // Name of the relation
 
 			if (attrOne == attrTwo)
 			{
-               
 				memcpy(rec->data + insertAttr[i].attrOffset, attrList[j].attrValue, insertAttr[i].attrLen);
+                indexComp[i] = j;
+
 				break;
 			}
 		}
@@ -64,18 +66,22 @@ Status Updates::Insert(const string& relation,      // Name of the relation
     Status insertStatus; 
     HeapFile heapInsert(relation, insertStatus);
     insertStatus = heapInsert.insertRecord(*rec, inRid);
+    
     //Utilities u;
     //u.Print(relation);
-    
 
-    /*for (int k = 0;k < attrCnt;++k)
+    Status entryStatus;
+    Status indexStatus;
+
+    for (int k = 0;k < attrCnt;++k)
     {
-    	if (insertAttr[k].indexed == true)
-    	{
-    		Status indexInsert = attrCat->insertEntry(VALUE, RID);
-    	}
-    }*/
-
+        if (insertAttr[k].indexed == true)
+        {
+            Index insertIndex(relation, insertAttr[k].attrOffset, insertAttr[k].attrLen, static_cast<Datatype>(insertAttr[k].attrType), 0, indexStatus);
+            entryStatus = insertIndex.insertEntry(attrList[indexComp[k]].attrValue, inRid);
+        }
+    }
+    
     delete [] insertAttr;
     delete rec;
 
