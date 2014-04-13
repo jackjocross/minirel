@@ -3,6 +3,7 @@
 #include "index.h"
 #include <string>
 #include <cstring>
+#include <iostream>
 
 /* 
  * A simple scan select using a heap file scan
@@ -96,6 +97,16 @@ Status Operators::ScanSelect(const string& result,       // Name of the output r
 {
 	cout << "Algorithm: File Scan" << endl;
 
+	/**********************************************
+	if attrDesc is NULL: basically do the same do while loop but
+	don't worry about checking for op to evaluate to true. 
+
+	Just run the record copy while projecting only the 
+	attributes which are in projNames
+	**********************************************/
+
+
+
 	string relation = attrDesc->relName;
 
 	Status outputStatus;
@@ -131,37 +142,40 @@ Status Operators::ScanSelect(const string& result,       // Name of the output r
 		if (attrDesc->attrType == 0)
 		{
 			int checkData;
-			memcpy(checkData, rec.data + attrDesc->attrOffset, attrDesc->attrLen);
+			memcpy(&checkData, rec.data + attrDesc->attrOffset, attrDesc->attrLen);
 			int litData;
-			memcpy(litData, attrValue, attrDesc->attrLen);
+			memcpy(&litData, attrValue, attrDesc->attrLen);
 
 			if (compareVals(checkData, litData, op))
 			{
 				//DO RECORD STUFF
+				cout << " check !!!! 1" << endl;
 			}
 		}
 		else if (attrDesc->attrType == 1)
 		{
 			double checkData;
-			memcpy(checkData, rec.data + attrDesc->attrOffset, attrDesc->attrLen);
+			memcpy(&checkData, rec.data + attrDesc->attrOffset, attrDesc->attrLen);
 			double litData;
-			memcpy(litData, attrValue, attrDesc->attrLen);
+			memcpy(&litData, attrValue, attrDesc->attrLen);
 
 			if (compareVals(checkData, litData, op))
 			{
 				//DO RECORD STUFF
+				cout << " check !!!! 2" << endl;
 			}
 		}
 		else if (attrDesc->attrType == 2)
 		{
 			string checkData;
-			memcpy(checkData, rec.data + attrDesc->attrOffset, attrDesc->attrLen);
+			memcpy(&checkData, rec.data + attrDesc->attrOffset, attrDesc->attrLen);
 			string litData;
-			memcpy(litData, attrValue, attrDesc->attrLen);
+			memcpy(&litData, attrValue, attrDesc->attrLen);
 
 			if (compareVals(checkData, litData, op))
 			{
 				//DO RECORD STUFF
+				cout << " check !!!!! 3" << endl;
 			}
 		}
 		
