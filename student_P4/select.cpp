@@ -39,12 +39,12 @@ Status Operators::Select(const string & result,      // name of the output relat
 	}
 	else
 	{	
-		checkStatus = attrCat->getInfo(projNames[0].relName, attr->attrName, check);
+		checkStatus = attrCat->getInfo(attr->relName, attr->attrName, check);
 		//^^MAYBE USE attr->relName, check if it works
 
 		for (int i = 0; i < projCnt; ++i) 
 		{
-			convertStatus = attrCat->getInfo(projNames[0].relName, attr->attrName, newNames[i]);
+			convertStatus = attrCat->getInfo(attr->relName, projNames[i].attrName, newNames[i]);
 			recLen += newNames[i].attrLen;
 		}
 

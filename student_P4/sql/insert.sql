@@ -35,6 +35,7 @@ INSERT INTO soaps (network, rating, name, soapid)
 
 -- run a few select queries
 SELECT soaps.network, soaps.rating FROM soaps WHERE soaps.soapid = 101;
+SELECT soaps.network, soaps.rating FROM soaps WHERE soaps.soapid < 101;
 SELECT stars.soapid, stars.real_name FROM stars;
 
 DROP TABLE soaps;

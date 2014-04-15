@@ -67,8 +67,8 @@ Status Updates::Insert(const string& relation,      // Name of the relation
     HeapFile heapInsert(relation, insertStatus);
     insertStatus = heapInsert.insertRecord(*rec, inRid);
     
-    //Utilities u;
-    //u.Print(relation);
+    Utilities u;
+    u.Print(relation);
 
     Status entryStatus;
     Status indexStatus;

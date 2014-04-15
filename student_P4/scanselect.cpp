@@ -3,7 +3,9 @@
 #include "index.h"
 #include <string>
 #include <cstring>
+#include <cstdlib>
 #include <iostream>
+#include "utility.h"
 
 /* 
  * A simple scan select using a heap file scan
@@ -105,9 +107,7 @@ Status Operators::ScanSelect(const string& result,       // Name of the output r
 	attributes which are in projNames
 	**********************************************/
 
-
-
-	string relation = attrDesc->relName;
+	string relation = projNames[0].relName;
 
 	Status outputStatus;
 	HeapFile output(result, outputStatus);
@@ -127,61 +127,130 @@ Status Operators::ScanSelect(const string& result,       // Name of the output r
 		return outputStatus;
 	}
 
-	input.startScan(attrDesc->attrOffset, attrDesc->attrLen, static_cast<Datatype>(attrDesc->attrType), NULL, op);
-
 	RID curId;
+	RID outRid;
 	Record rec;
+	Record *insert;
 	Status recStatus;
+	Status writeStatus;
+	int totalLen;
 
-
-	do
+	if (attrDesc == NULL)
 	{
-		//ERROR CHECK THISSSS
-		recStatus = input.getRecord(curId, rec);
+		input.startScan(0, 0, static_cast<Datatype>(0), NULL, op);
 
-		if (attrDesc->attrType == 0)
+		while (input.scanNext(curId) == OK)
 		{
-			int checkData;
-			memcpy(&checkData, rec.data + attrDesc->attrOffset, attrDesc->attrLen);
-			int litData;
-			memcpy(&litData, attrValue, attrDesc->attrLen);
+			totalLen = 0;
 
-			if (compareVals(checkData, litData, op))
+			recStatus = input.getRecord(curId, rec);
+			insert = new Record();
+			insert->data = (char *) malloc(reclen);
+			insert->length = reclen;
+
+			for (int i = 0;i < projCnt;++i)
 			{
-				//DO RECORD STUFF
-				cout << " check !!!! 1" << endl;
+				memcpy(insert->data + totalLen, rec.data + projNames[i].attrOffset, projNames[i].attrLen);
+				totalLen += projNames[i].attrLen;
 			}
-		}
-		else if (attrDesc->attrType == 1)
-		{
-			double checkData;
-			memcpy(&checkData, rec.data + attrDesc->attrOffset, attrDesc->attrLen);
-			double litData;
-			memcpy(&litData, attrValue, attrDesc->attrLen);
 
-			if (compareVals(checkData, litData, op))
-			{
-				//DO RECORD STUFF
-				cout << " check !!!! 2" << endl;
-			}
-		}
-		else if (attrDesc->attrType == 2)
-		{
-			string checkData;
-			memcpy(&checkData, rec.data + attrDesc->attrOffset, attrDesc->attrLen);
-			string litData;
-			memcpy(&litData, attrValue, attrDesc->attrLen);
+			writeStatus = output.insertRecord(*insert, outRid);
 
-			if (compareVals(checkData, litData, op))
-			{
-				//DO RECORD STUFF
-				cout << " check !!!!! 3" << endl;
-			}
+			delete insert;
 		}
-		
-
 	}
-	while (input.scanNext(curId) == OK);
+	else 
+	{
+		input.startScan(attrDesc->attrOffset, attrDesc->attrLen, static_cast<Datatype>(attrDesc->attrType), static_cast<const char*>(attrValue), op);
+
+		while (input.scanNext(curId) == OK)
+		{
+		//ERROR CHECK THISSSS
+			recStatus = input.getRecord(curId, rec);
+
+			if (attrDesc->attrType == 0)
+			{
+				int checkData;
+				memcpy(&checkData, rec.data + attrDesc->attrOffset, attrDesc->attrLen);
+				int litData;
+				memcpy(&litData, attrValue, attrDesc->attrLen);
+
+				if (compareVals(checkData, litData, op))
+				{
+					totalLen = 0;
+
+					recStatus = input.getRecord(curId, rec);
+					insert = new Record();
+					insert->data = (char *) malloc(reclen);
+					insert->length = reclen;
+
+					for (int i = 0;i < projCnt;++i)
+					{
+ 						memcpy(insert->data + totalLen, rec.data + projNames[i].attrOffset, projNames[i].attrLen);
+						totalLen += projNames[i].attrLen;
+					}
+
+					writeStatus = output.insertRecord(*insert, outRid);
+
+					delete insert;
+				}
+			}
+			else if (attrDesc->attrType == 1)
+			{
+				double checkData;
+				memcpy(&checkData, rec.data + attrDesc->attrOffset, attrDesc->attrLen);
+				double litData;
+				memcpy(&litData, attrValue, attrDesc->attrLen);
+
+				if (compareVals(checkData, litData, op))
+				{
+					totalLen = 0;
+
+					recStatus = input.getRecord(curId, rec);
+					insert = new Record();
+					insert->data = (char *) malloc(reclen);
+					insert->length = reclen;
+
+					for (int i = 0;i < projCnt;++i)
+					{
+						memcpy(insert->data + totalLen, rec.data + projNames[i].attrOffset, projNames[i].attrLen);
+						totalLen += projNames[i].attrLen;
+					}
+
+					writeStatus = output.insertRecord(*insert, outRid);
+
+					delete insert;
+				}
+			}
+			else if (attrDesc->attrType == 2)
+			{ 
+				string checkData;
+				memcpy(&checkData, rec.data + attrDesc->attrOffset, attrDesc->attrLen);
+				string litData;
+				memcpy(&litData, attrValue, attrDesc->attrLen);
+
+				if (compareVals(checkData, litData, op))
+				{
+					totalLen = 0;
+
+					recStatus = input.getRecord(curId, rec);
+					insert = new Record();
+					insert->data = (char *) malloc(reclen);
+					insert->length = reclen;
+
+					for (int i = 0;i < projCnt;++i)
+					{
+						memcpy(insert->data + totalLen, rec.data + projNames[i].attrOffset, projNames[i].attrLen);
+						totalLen += projNames[i].attrLen;
+					}
+
+					writeStatus = output.insertRecord(*insert, outRid);
+
+					delete insert;
+				}
+			}
+		}
+	}
 
 	return OK;
 }
