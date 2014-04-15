@@ -120,13 +120,13 @@ Status Operators::IndexSelect(const string& result,       // Name of the output 
 		} 
 		else if (attrDesc->attrType == 2) 
 		{
-			string checkData;
-			memcpy(&checkData, rec.data + attrDesc->attrOffset, attrDesc->attrLen);
-			string litData;
-			memcpy(&litData, attrValue, attrDesc->attrLen);
+				char checkD[attrDesc->attrLen];
+				memcpy(&checkD, rec.data + attrDesc->attrOffset, attrDesc->attrLen);
+				char litD[attrDesc->attrLen];
+				memcpy(&litD, attrValue, attrDesc->attrLen);
 
-			//cout << "listData: " << litData << endl;
-			//cout << "checkdata: " << checkData << endl;
+				string checkData = checkD;
+				string litData = litD;
 
 			if (litData == checkData) 
 			{
