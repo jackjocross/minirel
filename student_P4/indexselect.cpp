@@ -118,38 +118,8 @@ Status Operators::IndexSelect(const string& result,       // Name of the output 
 
 			}
 		} 
-		else if (attrDesc->attrType == 2) 
-		{
-				char checkD[attrDesc->attrLen];
-				memcpy(&checkD, rec.data + attrDesc->attrOffset, attrDesc->attrLen);
-				char litD[attrDesc->attrLen];
-				memcpy(&litD, attrValue, attrDesc->attrLen);
 
-				string checkData = checkD;
-				string litData = litD;
-
-			if (litData == checkData) 
-			{
-
-				insert = new Record();
-				insert->data = (char *)malloc(reclen);
-				insert->length = reclen;
-
-				int totalLen = 0;
-
-				for (int i = 0; i < projCnt; ++i) 
-				{
-					memcpy(insert->data + totalLen, rec.data + projNames[i].attrOffset, 
-						projNames[i].attrLen);
-					totalLen += projNames[i].attrLen;
-				}
-
-				insertOutputStat = output.insertRecord(*insert, outId);
-				
-				delete insert;
-
-			}
-		}
+		//CHARS ARE NOT INDEXED, SO WE WE ONLY NEED TO CHECK FOR DOUBLES / INTS //
 	}
 
 	return OK;
