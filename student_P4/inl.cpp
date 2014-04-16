@@ -21,109 +21,107 @@ Status Operators::INL(const string& result,           // Name of the output rela
                       const AttrDesc& attrDesc2,      // The left attribute in the join predicate
                       const int reclen)               // Length of a tuple in the output relation
 {
-  cout << "Algorithm: Indexed NL Join" << endl;
+    cout << "Algorithm: Indexed NL Join" << endl;
 
-  /* Your solution goes here */
-  Status outputStat;
-  HeapFile output(result, outputStat);
+    /* Your solution goes here */
+    Status outputStatus;
+    HeapFile output(result, outputStatus);
 
-  cout << "outputStat: " << outputStat << endl;
+    Status hpfStat, indxHeapStat;
 
-  if (attrDesc1.indexed) 
-  {
+    //The HeapFileScan for the non-indexed relation (attrDesc1), which is determined in join.cpp
+    HeapFileScan heapScan(attrDesc1.relName, hpfStat);
+    heapScan.startScan(attrDesc1.attrOffset, attrDesc1.attrLen, static_cast<Datatype>(attrDesc1.attrType), NULL, op);
+    
+    //The HeapFileScan necessary to do getRandomRecord for the indexed relation
+    HeapFileScan indxHeapScan(attrDesc2.relName, indxHeapStat);
+    indxHeapScan.startScan(attrDesc2.attrOffset, attrDesc2.attrLen, static_cast<Datatype>(attrDesc2.attrType), NULL, op);
 
-  	Status heapStatus;
-  	HeapFileScan heap(attrDesc2.relName, attrDesc2.attrOffset, attrDesc2.attrLen, static_cast<Datatype>(attrDesc2.attrType), NULL, op, heapStatus);
-  	cout << "heapfile scan status : " << heapStatus << endl;
+    RID curHeapId, curIndxId, outId;
+    Record heapRec, indexRec, *insert;
 
+    Status newIndexStat, newIndxScan, getRandStat;
 
-  	Status heapStartScanStatus; 
-  	heapStartScanStatus = heap.startScan(attrDesc2.attrOffset, attrDesc2.attrLen, static_cast<Datatype>(attrDesc2.attrType), NULL, op);
-  	cout << "hpfs scan start status : " << heapStartScanStatus << endl; 
+    while (heapScan.scanNext(curHeapId, heapRec) == OK)
+    {
+        Index indxScan(attrDesc2.relName, attrDesc2.attrOffset, attrDesc2.attrLen, static_cast<Datatype>(attrDesc2.attrType), 1, newIndexStat);
+        //ERROR CHECK INDX SCAN STATUS
+  
+        //Getting the value to do an index scan on from the non-indexed record
+        void *attrVal = (char*)malloc(attrDesc1.attrLen);
+        memcpy(attrVal, heapRec.data + attrDesc1.attrOffset, attrDesc1.attrLen);
 
+        newIndxScan = indxScan.startScan(attrVal);
 
-  	RID heapId;
-  	RID indexId;
-  	RID outRid;
+        while (indxScan.scanNext(curIndxId) == OK)
+        {
+            getRandStat = indxHeapScan.getRandomRecord(curIndxId, indexRec);
 
-  	Record heapRec;
-  	Record indxRec;
-  	Record *insert;
-  	int totalLen = 0;
+            if (attrDesc2.attrType == 0)
+            {
 
-	Status heapRecStat;
-	Status indxRecStat;
-	Status indxStrtScan;
-	Status writeStatus;
+                if (matchRec(heapRec, indexRec, attrDesc1, attrDesc2) == 0)
+                {
 
+                    insert = new Record();
+                    insert->length = reclen;
+                    insert->data = (char*)malloc(reclen);
 
-  	while (heap.scanNext(heapId) == OK) 
-  	{
-  		Status indxStatus;
-  		Index index(attrDesc1.relName, attrDesc1.attrOffset, attrDesc1.attrLen, static_cast<Datatype>(attrDesc1.attrType), 1, indxStatus);
-  		cout << "indexStatus: " << indxStatus << endl;
+                    int totalLen = 0;
 
+                    for (int i = 0; i < projCnt; ++i)
+                    {
+                        string relNameCheck = attrDescArray[i].relName;
 
-  		
+                        if (strcmp(attrDescArray[i].relName, attrDesc2.relName)) 
+                        {
+                            memcpy(insert->data + totalLen, indexRec.data + attrDescArray[i].attrOffset, attrDescArray[i].attrLen);
+                            totalLen += attrDescArray[i].attrLen;
+                        }
+                        else
+                        {
+                            memcpy(insert->data + totalLen, heapRec.data + attrDescArray[i].attrOffset, attrDescArray[i].attrLen);
+                            totalLen += attrDescArray[i].attrLen;
+                        }
+                        
+                    }
 
+                    output.insertRecord(*insert, outId);
 
-  		heapRecStat = heap.getRandomRecord(heapId, heapRec);
-  		cout << "heapRecStat: " << heapRecStat << endl;
+                    delete insert;
+                }
 
-  		void *attrVal;
+            }
+            else if (attrDesc2.attrType == 1)
+            {
 
-  		memcpy(attrVal, heapRec.data + attrDesc2.attrOffset, attrDesc2.attrLen);
+                if (matchRec(heapRec, indexRec, attrDesc1, attrDesc2) == 0)
+                {
+                    insert = new Record();
+                    insert->length = reclen;
+                    insert->data = (char*)malloc(reclen);
 
-  		indxStrtScan = index.startScan(attrVal);
-  		
+                    int totalLen = 0;
+                    for (int i = 0; i < projCnt; ++i)
+                    {
+                        memcpy(insert->data + totalLen, indexRec.data + attrDescArray[i].attrOffset, attrDescArray[i].attrLen);
+                        totalLen += attrDescArray[i].attrLen;
+                    }
 
-  		cout << "index next scan: " << index.scanNext(indexId) << endl;
+                    output.insertRecord(*insert, outId);
 
-  		while (index.scanNext(indexId) == OK)
-  		{
-  			indxRecStat = heap.getRandomRecord(indexId, indxRec);
-  			cout << "indxRecStat: " << indxRecStat << endl;
-  			
-  			if (attrDesc1.attrType == 0)
-  			{
-  				int indxCheck; 
-  				memcpy(&indxCheck, indxRec.data + attrDesc1.attrOffset, attrDesc1.attrLen);
-  				int heapCheck; 
-  				memcpy(&heapCheck, heapRec.data + attrDesc2.attrOffset, attrDesc2.attrLen);
+                    delete insert;
+                }
 
-  				cout << "index data check: " << indxCheck << endl;
-  				cout << "heap data check: " << heapCheck << endl;
+            }
+        }
 
-  				if (indxCheck == heapCheck)
-  				{
-  					insert = new Record();
-  					insert->data = (char *)malloc(reclen);
-  					insert->length = reclen;
-  					
+        indxScan.endScan();
+    }
 
-  					for (int i = 0; i < projCnt; ++i)
-  					{
-  						memcpy(insert->data + totalLen, indxRec.data + attrDescArray[i].attrOffset, attrDescArray[i].attrLen);
-  						totalLen += attrDescArray[i].attrLen;
-  					}
+    heapScan.endScan();
+    indxHeapScan.endScan();
 
-  					writeStatus = output.insertRecord(*insert, outRid);
-
-  					delete insert;
-
-  				}
-  			}
-  		}
-  	}
-
-
-  }
-  else 
-  {
-
-  }
-
-
-  return OK;
+    return OK;
 }
 

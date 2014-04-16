@@ -55,9 +55,9 @@ Status Operators::IndexSelect(const string& result,       // Name of the output 
 
 		if (attrDesc->attrType == 0) 
 		{
-			int checkData;
+			int checkData; //data in record to be evaluated
 			memcpy(&checkData, rec.data + attrDesc->attrOffset, attrDesc->attrLen);
-			int litData;
+			int litData; //data given by attrVal to see if they are equal
 			memcpy(&litData, attrValue, attrDesc->attrLen);
 
 			//cout << "listData: " << litData << endl;
