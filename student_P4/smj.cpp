@@ -118,7 +118,7 @@ Status Operators::SMJ(const string& result,           // Output relation name
                 rightFile.setMark();
             }
         }
-        else if (matchRec(curLeft, curRight, attrDesc1, attrDesc2) != 0)
+        else if (matchRec(curLeft, curRight, attrDesc1, attrDesc2) < 0)
         {
             //incrementing left
             oldLeft.data = curLeft.data;
@@ -135,6 +135,21 @@ Status Operators::SMJ(const string& result,           // Output relation name
                 rightFile.gotoMark();
             }
 
+        }
+        else if (matchRec(curLeft, curRight, attrDesc1, attrDesc2) > 0)
+        {
+            //incrementing right
+            oldRight.data = curRight.data;
+            oldRight.length = curRight.length;
+            rightRecStat = rightFile.next(curRight);
+            if (rightRecStat == FILEEOF)
+            {
+                rightFile.gotoMark();
+            }
+            else if (matchRec(curRight, oldRight, attrDesc2, attrDesc2) == 0)
+            {
+                rightFile.setMark();
+            }
         }
 
     }
