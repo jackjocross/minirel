@@ -25,6 +25,42 @@ Status Operators::Join(const string& result,           // Name of the output rel
 {
     /* Your solution goes here */
 
+    Status convertStatus;
+    Status checkOneStatus;
+    AttrDesc checkOne;
+    Status checkTwoStatus;
+    AttrDesc checkTwo;
+    AttrDesc newNames[projCnt];
+    int recLen = 0;
+
+    //converts from infos to descs
+    for (int i = 0;i < projCnt;++i)
+    {
+        convertStatus = attrCat->getInfo(projNames[i].relName, projNames[i].attrName, newNames[i]);
+        recLen += newNames[i].attrLen;
+    }
+
+    checkOneStatus = attrCat->getInfo(attr1->relName, attr1->attrName, checkOne);
+    checkTwoStatus = attrCat->getInfo(attr2->relName, attr2->attrName, checkTwo);
+
+    Status snlStatus, inlStatus, smjStatus;
+
+    //SNL
+    if (op != EQ)
+    {
+        snlStatus = SNL(result, projCnt, newNames, checkOne, op, checkTwo, recLen);
+    }
+    //INL
+    else if (checkOne.indexed || checkTwo.indexed)
+    {
+        inlStatus = INL(result, projCnt, newNames, checkOne, op, checkTwo, recLen);
+    }
+    //SMJ
+    else
+    {
+        smjStatus = SMJ(result, projCnt, newNames, checkOne, op, checkTwo, recLen);
+    }
+
 	return OK;
 }
 
