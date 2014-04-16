@@ -5,7 +5,6 @@
 #include <string>
 #include <cstring>
 #include <iostream>
-#include "utility.h"
 #include <cstdlib>
 
 /* 
@@ -73,7 +72,7 @@ Status Operators::INL(const string& result,           // Name of the output rela
                     {
                         string relNameCheck = attrDescArray[i].relName;
 
-                        if (strcmp(attrDescArray[i].relName, attrDesc2.relName)) 
+                        if (strcmp(attrDescArray[i].relName, attrDesc2.relName) == 0) 
                         {
                             memcpy(insert->data + totalLen, indexRec.data + attrDescArray[i].attrOffset, attrDescArray[i].attrLen);
                             totalLen += attrDescArray[i].attrLen;

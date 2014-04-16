@@ -4,7 +4,6 @@
 #include <string>
 #include <cstring>
 #include <iostream>
-#include "utility.h"
 #include <cstdlib>
 
 Status Operators::IndexSelect(const string& result,       // Name of the output relation

@@ -53,8 +53,6 @@ Status Operators::Join(const string& result,           // Name of the output rel
     //INL
     else if (checkOne.indexed || checkTwo.indexed)
     {
-        inlStatus = INL(result, projCnt, newNames, checkOne, op, checkTwo, recLen);
-
         if (checkOne.indexed && !checkTwo.indexed)
         {
             inlStatus = INL(result, projCnt, newNames, checkTwo, op, checkOne, recLen);
