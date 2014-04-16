@@ -55,9 +55,9 @@ Status Operators::IndexSelect(const string& result,       // Name of the output 
 
 		if (attrDesc->attrType == 0) 
 		{
-			int checkData;
+			int checkData; //data in record to be evaluated
 			memcpy(&checkData, rec.data + attrDesc->attrOffset, attrDesc->attrLen);
-			int litData;
+			int litData; //data given by attrVal to see if they are equal
 			memcpy(&litData, attrValue, attrDesc->attrLen);
 
 			//cout << "listData: " << litData << endl;
@@ -118,38 +118,8 @@ Status Operators::IndexSelect(const string& result,       // Name of the output 
 
 			}
 		} 
-		else if (attrDesc->attrType == 2) 
-		{
-			string checkData;
-			memcpy(&checkData, rec.data + attrDesc->attrOffset, attrDesc->attrLen);
-			string litData;
-			memcpy(&litData, attrValue, attrDesc->attrLen);
 
-			//cout << "listData: " << litData << endl;
-			//cout << "checkdata: " << checkData << endl;
-
-			if (litData == checkData) 
-			{
-
-				insert = new Record();
-				insert->data = (char *)malloc(reclen);
-				insert->length = reclen;
-
-				int totalLen = 0;
-
-				for (int i = 0; i < projCnt; ++i) 
-				{
-					memcpy(insert->data + totalLen, rec.data + projNames[i].attrOffset, 
-						projNames[i].attrLen);
-					totalLen += projNames[i].attrLen;
-				}
-
-				insertOutputStat = output.insertRecord(*insert, outId);
-				
-				delete insert;
-
-			}
-		}
+		//CHARS ARE NOT INDEXED, SO WE WE ONLY NEED TO CHECK FOR DOUBLES / INTS //
 	}
 
 	return OK;

@@ -224,13 +224,18 @@ Status Operators::ScanSelect(const string& result,       // Name of the output r
 			}
 			else if (attrDesc->attrType == 2)
 			{ 
-				string checkData;
-				memcpy(&checkData, rec.data + attrDesc->attrOffset, attrDesc->attrLen);
-				string litData;
-				memcpy(&litData, attrValue, attrDesc->attrLen);
+
+				char checkD[attrDesc->attrLen];
+				memcpy(&checkD, rec.data + attrDesc->attrOffset, attrDesc->attrLen);
+				char litD[attrDesc->attrLen];
+				memcpy(&litD, attrValue, attrDesc->attrLen);
+
+				string checkData = checkD;
+				string litData = litD;
 
 				if (compareVals(checkData, litData, op))
 				{
+
 					totalLen = 0;
 
 					recStatus = input.getRecord(curId, rec);

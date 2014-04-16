@@ -12,16 +12,16 @@
  * Joins two relations
  *
  * Returns:
- * 	OK on success
- * 	an error code otherwise
+ *  OK on success
+ *  an error code otherwise
  */
 
 Status Operators::Join(const string& result,           // Name of the output relation 
                        const int projCnt,              // Number of attributes in the projection
-    	               const attrInfo projNames[],     // List of projection attributes
-    	               const attrInfo* attr1,          // Left attr in the join predicate
-    	               const Operator op,              // Predicate operator
-    	               const attrInfo* attr2)          // Right attr in the join predicate
+                       const attrInfo projNames[],     // List of projection attributes
+                       const attrInfo* attr1,          // Left attr in the join predicate
+                       const Operator op,              // Predicate operator
+                       const attrInfo* attr2)          // Right attr in the join predicate
 {
     /* Your solution goes here */
 
@@ -54,6 +54,16 @@ Status Operators::Join(const string& result,           // Name of the output rel
     else if (checkOne.indexed || checkTwo.indexed)
     {
         inlStatus = INL(result, projCnt, newNames, checkOne, op, checkTwo, recLen);
+
+        if (checkOne.indexed && !checkTwo.indexed)
+        {
+            inlStatus = INL(result, projCnt, newNames, checkTwo, op, checkOne, recLen);
+        }
+        else
+        {
+            inlStatus = INL(result, projCnt, newNames, checkOne, op, checkTwo, recLen);
+        }
+
     }
     //SMJ
     else
@@ -62,6 +72,7 @@ Status Operators::Join(const string& result,           // Name of the output rel
     }
 
 	return OK;
+
 }
 
 // Function to compare two record based on the predicate. Returns 0 if the two attributes 
