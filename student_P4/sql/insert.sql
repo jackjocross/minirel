@@ -17,6 +17,9 @@ INSERT INTO stars(starid, real_name, plays, soapid)
 INSERT INTO stars (real_name, soapid, starid, plays) 
 	VALUES ('Bonarrigo, Laura', 3, 101, 'Cassie');
 
+INSERT INTO stars (real_name, soapid, starid, plays)
+	VALUES ('boney, harry', 3, 3, 'ClydeSandusky');
+
 SELECT * FROM stars;
 
 --

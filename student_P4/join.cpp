@@ -4,6 +4,8 @@
 #include "index.h"
 #include <cmath>
 #include <cstring>
+#include <cstdlib>
+#include <iostream>
 
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #define DOUBLEERROR 1e-07
@@ -25,6 +27,21 @@ Status Operators::Join(const string& result,           // Name of the output rel
 {
     /* Your solution goes here */
 
+    /* Error checking */
+
+    if (attr1->attrType != attr2->attrType)
+    {
+        return ATTRTYPEMISMATCH;
+    }
+    else  if (projCnt == 0)
+    {
+        return ATTRTYPEMISMATCH;
+    }
+    else if ((attr1 == NULL) || (attr2 == NULL))
+    {
+        return ATTRTYPEMISMATCH;
+    }
+
     Status convertStatus;
     Status checkOneStatus;
     AttrDesc checkOne;
@@ -37,11 +54,23 @@ Status Operators::Join(const string& result,           // Name of the output rel
     for (int i = 0;i < projCnt;++i)
     {
         convertStatus = attrCat->getInfo(projNames[i].relName, projNames[i].attrName, newNames[i]);
+        if (convertStatus != OK)
+        {
+            return convertStatus;
+        }
         recLen += newNames[i].attrLen;
     }
 
     checkOneStatus = attrCat->getInfo(attr1->relName, attr1->attrName, checkOne);
+    if (checkOneStatus != OK)
+    {
+        return checkOneStatus;
+    }
     checkTwoStatus = attrCat->getInfo(attr2->relName, attr2->attrName, checkTwo);
+    if (checkTwoStatus != OK)
+    {
+        return checkTwoStatus;
+    }
 
     Status snlStatus, inlStatus, smjStatus;
 
@@ -49,6 +78,10 @@ Status Operators::Join(const string& result,           // Name of the output rel
     if (op != EQ)
     {
         snlStatus = SNL(result, projCnt, newNames, checkOne, op, checkTwo, recLen);
+        if (snlStatus != OK)
+        {
+            return snlStatus;
+        }
     }
     //INL
     else if (checkOne.indexed || checkTwo.indexed)
@@ -56,10 +89,18 @@ Status Operators::Join(const string& result,           // Name of the output rel
         if (checkOne.indexed && !checkTwo.indexed)
         {
             inlStatus = INL(result, projCnt, newNames, checkTwo, op, checkOne, recLen);
+            if (inlStatus != OK)
+            {
+                return inlStatus;
+            }
         }
         else
         {
             inlStatus = INL(result, projCnt, newNames, checkOne, op, checkTwo, recLen);
+            if (inlStatus != OK)
+            {
+                return inlStatus;
+            }
         }
 
     }
@@ -67,6 +108,10 @@ Status Operators::Join(const string& result,           // Name of the output rel
     else
     {
         smjStatus = SMJ(result, projCnt, newNames, checkOne, op, checkTwo, recLen);
+        if (smjStatus != OK)
+        {
+            return smjStatus;
+        }
     }
 
 	return OK;

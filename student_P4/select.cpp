@@ -18,7 +18,6 @@ Status Operators::Select(const string & result,      // name of the output relat
 		         const Operator op,         // predicate operation
 		         const void *attrValue)     // literal value in the predicate
 {
-
 	Status selectFn; 
 	Status checkStatus;
 	Status convertStatus;
@@ -32,29 +31,57 @@ Status Operators::Select(const string & result,      // name of the output relat
 		for (int i = 0; i < projCnt; ++i) 
 		{
 			convertStatus = attrCat->getInfo(projNames[i].relName, projNames[i].attrName, newNames[i]);
+			if (convertStatus != OK)
+			{
+				return convertStatus;
+			} 
 			recLen += newNames[i].attrLen;
+
+			string attrName = projNames[i].attrName;
 		}
 
 		selectFn = ScanSelect(result, projCnt, newNames, NULL, op, NULL, recLen);
+		if (selectFn != OK)
+		{
+			return selectFn;
+		} 
 	}
 	else
 	{	
 		checkStatus = attrCat->getInfo(attr->relName, attr->attrName, check);
-		//^^MAYBE USE attr->relName, check if it works
+		if (checkStatus != OK)
+		{
+			return checkStatus;
+		} 
 
 		for (int i = 0; i < projCnt; ++i) 
 		{
 			convertStatus = attrCat->getInfo(attr->relName, projNames[i].attrName, newNames[i]);
+			if (convertStatus != OK) 
+			{
+				return convertStatus;
+			}
 			recLen += newNames[i].attrLen;
+
+			string attrName = projNames[i].attrName;
+
 		}
 
 		if ((check.indexed) && (op == EQ))
 		{
 			selectFn = IndexSelect(result, projCnt, newNames, &check, op, attrValue, recLen);
+			if (selectFn != OK)
+			{
+				return selectFn;
+			} 
 		}
 		else 
 		{
 			selectFn = ScanSelect(result, projCnt, newNames, &check, op, attrValue, recLen);
+			if (selectFn != OK)
+			{
+				return selectFn;
+			} 
 		}
 	}
 

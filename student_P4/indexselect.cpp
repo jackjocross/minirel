@@ -20,103 +20,82 @@ Status Operators::IndexSelect(const string& result,       // Name of the output 
 
 	string relation = attrDesc->relName;
 
-	/*cout << "printing out the relation: \n";
-	Utilities u;
-	u.Print(relation);*/
-
 	Status outputStatus;
 	HeapFile output(result, outputStatus);
+	if (outputStatus != OK)
+	{
+		return outputStatus;
+	}
+
 	Status inStatus;
 	HeapFileScan input(relation, inStatus);
-	input.startScan(attrDesc->attrOffset, attrDesc->attrLen, static_cast<Datatype>(attrDesc->attrType), NULL, op);
-	//made no difference from when I had filter as a NULL value // 
+	if (inStatus != OK)
+	{
+		return inStatus;
+	} 
 
+	Status inStartScan = input.startScan(attrDesc->attrOffset, attrDesc->attrLen, static_cast<Datatype>(attrDesc->attrType), NULL, op);
+	if (inStartScan != OK)
+	{
+		return inStartScan;
+	} 
 
 	Status inputStatus;
 	Index indxScan(relation, attrDesc->attrOffset, attrDesc->attrLen, static_cast<Datatype>(attrDesc->attrType), 1, inputStatus);
+	if (inputStatus != OK)
+	{
+		return inputStatus;
+	} 
 
 	Status indexStatus;
 	indexStatus = indxScan.startScan(attrValue);
+	if (indexStatus != OK)
+	{
+		return indexStatus;
+	}
 
+	RID curId, outId;
+	Record rec, *insert;
+	Status recStatus, scanNextStat, insertOutputStat, indxScanNextStat, getRandStat;
 
-	RID curId;
-	RID outId;
-	Record rec;
-	Record *insert;
-	Status recStatus;
-	Status scanNextStat;
-	Status insertOutputStat;
+	while (1) {
 
-	while (indxScan.scanNext(curId) == OK) {
-
-
-		input.getRandomRecord(curId, rec);
-
-		if (attrDesc->attrType == 0) 
+		indxScanNextStat = indxScan.scanNext(curId);
+		if (indxScanNextStat == NOMORERECS) 
 		{
-			int checkData; //data in record to be evaluated
-			memcpy(&checkData, rec.data + attrDesc->attrOffset, attrDesc->attrLen);
-			int litData; //data given by attrVal to see if they are equal
-			memcpy(&litData, attrValue, attrDesc->attrLen);
-
-			//cout << "listData: " << litData << endl;
-			//cout << "checkdata: " << checkData << endl;
-
-			if (litData == checkData) 
-			{
-
-				insert = new Record();
-				insert->data = (char *)malloc(reclen);
-				insert->length = reclen;
-
-				int totalLen = 0;
-
-				for (int i = 0; i < projCnt; ++i) 
-				{
-					memcpy(insert->data + totalLen, rec.data + projNames[i].attrOffset, 
-						projNames[i].attrLen);
-					totalLen += projNames[i].attrLen;
-				}
-
-				insertOutputStat = output.insertRecord(*insert, outId);
-				
-				delete insert;
-
-			}
-			
-		} 
-		else if (attrDesc->attrType == 1) 
+			break;
+		}
+		else if (indxScanNextStat != OK) 
 		{
-			double checkData;
-			memcpy(&checkData, rec.data + attrDesc->attrOffset, attrDesc->attrLen);
-			double litData;
-			memcpy(&litData, attrValue, attrDesc->attrLen);
-
-			//cout << "listData: " << litData << endl;
-			//cout << "checkdata: " << checkData << endl;
-
-			if (litData == checkData) 
-			{
-
-				insert = new Record();
-				insert->data = (char *)malloc(reclen);
-				insert->length = reclen;
-
-				int totalLen = 0;
-
-				for (int i = 0; i < projCnt; ++i) 
-				{
-					memcpy(insert->data + totalLen, rec.data + projNames[i].attrOffset, 
-						projNames[i].attrLen);
-					totalLen += projNames[i].attrLen;
-				}
-
-				insertOutputStat = output.insertRecord(*insert, outId);
-				
-				delete insert;
-
-			}
+			return indxScanNextStat;
+		}
+		getRandStat = input.getRandomRecord(curId, rec);
+		if (getRandStat != OK)
+		{
+			return getRandStat;
 		} 
+
+		insert = new Record();
+		insert->data = (char *)malloc(reclen);
+		insert->length = reclen;
+
+		int totalLen = 0;
+
+		for (int i = 0; i < projCnt; ++i) 
+		{
+			memcpy(insert->data + totalLen, rec.data + projNames[i].attrOffset, projNames[i].attrLen);
+			totalLen += projNames[i].attrLen;
+		}
+
+		insertOutputStat = output.insertRecord(*insert, outId);
+		if (insertOutputStat != OK)
+		{
+			return insertOutputStat;
+		} 
+		
+		free(insert->data);
+		delete insert;
+
 
 		//CHARS ARE NOT INDEXED, SO WE WE ONLY NEED TO CHECK FOR DOUBLES / INTS //
 	}

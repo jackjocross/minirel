@@ -103,6 +103,7 @@ Status Operators::SMJ(const string& result,           // Output relation name
 
             writeStatus = output.insertRecord(*insert, outRid);
 
+            free(insert->data);
             delete insert;
 
             //incrementing right

@@ -6,39 +6,6 @@
 #include <cstdlib>
 #include <cstring>
 
-
-bool compareVals(int checkData, Operator op)
-{
-	if ((op == LT) && (checkData < 0))
-	{
-		return true;
-	}
-	else if ((op == LTE) && (checkData <= 0))
-	{
-		return true;
-	}
-	else if ((op == EQ) && (checkData == 0))
-	{
-		return true;
-	}
-	else if ((op == GTE) && (checkData >= 0))
-	{
-		return true;
-	}
-	else if ((op == GT) && (checkData > 0))
-	{
-		return true;
-	}
-	else if ((op == NE) && (checkData != 0))
-	{
-		return true;
-	}
-	else 
-	{
-		return false;
-	}
-}
-
 Status Operators::SNL(const string& result,           // Output relation name
                       const int projCnt,              // Number of attributes in the projection
                       const AttrDesc attrDescArray[], // Projection list (as AttrDesc)
@@ -89,131 +56,115 @@ Status Operators::SNL(const string& result,           // Output relation name
 	Status recStatusOne;
 	Status recStatusTwo;
 	Status writeStatus;
+	Status startOneStatus;
+	Status startTwoStatus;
+	Status scanOneStatus;
+	Status scanTwoStatus;
 	string relNameCheck;
 	int totalLen;
+	Operator scanOp;
 
-	input1.startScan(attrDesc1.attrOffset, attrDesc1.attrLen, static_cast<Datatype>(attrDesc1.attrType), NULL, op);
-	
-	while (input1.scanNext(curIdOne, recOne) == OK)
+
+	startOneStatus = input1.startScan(attrDesc1.attrOffset, attrDesc1.attrLen, static_cast<Datatype>(attrDesc1.attrType), NULL, op);
+	if (startOneStatus != OK)
 	{
-		input2.startScan(attrDesc2.attrOffset, attrDesc2.attrLen, static_cast<Datatype>(attrDesc2.attrType), NULL, op);
-
-		while (input2.scanNext(curIdTwo, recTwo) == OK)
-		{		
-			if (attrDesc1.attrType == 0)
-			{
-				int checkData = matchRec(recOne, recTwo, attrDesc1, attrDesc2);
-				
-				if (compareVals(checkData, op))
-				{
-					totalLen = 0;
-					insert = new Record();
-					insert->data = (char *) malloc(reclen);
-					insert->length = reclen;
-
-					for (int i = 0;i < projCnt;++i)
-					{
-						relNameCheck = attrDescArray[i].relName;
-
-						if (relNameCheck == relation1)
-						{
- 							memcpy(insert->data + totalLen, recOne.data + attrDescArray[i].attrOffset, attrDescArray[i].attrLen);
-						}
-						else
-						{
-							memcpy(insert->data + totalLen, recTwo.data + attrDescArray[i].attrOffset, attrDescArray[i].attrLen);
-						}
-
-						totalLen += attrDescArray[i].attrLen;
-					}
-
-					writeStatus = output.insertRecord(*insert, outRid);
-
-					delete insert;
-				}
-			}
-			else if (attrDesc1.attrType == 1)
-			{
-				int checkData = matchRec(recOne, recTwo, attrDesc1, attrDesc2);
-				
-				if (compareVals(checkData, op))
-				{
-					totalLen = 0;
-
-					insert = new Record();
-					insert->data = (char *) malloc(reclen);
-					insert->length = reclen;
-
-					for (int i = 0;i < projCnt;++i)
-					{
-						relNameCheck = attrDescArray[i].relName;
-
-						if (relNameCheck == relation1)
-						{
- 							memcpy(insert->data + totalLen, recOne.data + attrDescArray[i].attrOffset, attrDescArray[i].attrLen);
-						}
-						else
-						{
-							memcpy(insert->data + totalLen, recTwo.data + attrDescArray[i].attrOffset, attrDescArray[i].attrLen);
-						}
-						totalLen += attrDescArray[i].attrLen;
-					}
-
-					writeStatus = output.insertRecord(*insert, outRid);
-
-					delete insert;
-				}
-			}
-			else if (attrDesc1.attrType == 2)
-			{ 
-				int checkData = matchRec(recOne, recTwo, attrDesc1, attrDesc2);
-				
-				if (compareVals(checkData, op))
-				{
-					totalLen = 0;
-
-					insert = new Record();
-					insert->data = (char *) malloc(reclen);
-					insert->length = reclen;
-
-					for (int i = 0;i < projCnt;++i)
-					{
-						relNameCheck = attrDescArray[i].relName;
-
-						if (relNameCheck == relation1)
-						{
- 							memcpy(insert->data + totalLen, recOne.data + attrDescArray[i].attrOffset, attrDescArray[i].attrLen);
-						}
-						else
-						{
-							memcpy(insert->data + totalLen, recTwo.data + attrDescArray[i].attrOffset, attrDescArray[i].attrLen);
-						}
-						totalLen += attrDescArray[i].attrLen;
-					}
-
-					writeStatus = output.insertRecord(*insert, outRid);
-
-					delete insert;
-				}
-			}
-		}
-
-		input2.endScan();
+		return startOneStatus;
 	}
 
-	input2.endScan();
+	while (1)
+	{
+		scanOneStatus = input1.scanNext(curIdOne, recOne);
+		if (scanOneStatus == FILEEOF)
+		{
+			break;
+		}
+		else if (scanOneStatus != OK)
+		{
+			return scanOneStatus;
+		}
+
+		void* temp = (char*)malloc(attrDesc1.attrLen);
+		memcpy(temp, recOne.data + attrDesc1.attrOffset, attrDesc1.attrLen);
+		char* tempInsert = static_cast<char*>(temp);
+
+		if (op == LT)
+		{
+			scanOp = GT;
+		}
+		else if (op == LTE)
+		{
+			scanOp = GTE;
+		}
+		else if (op == GT)
+		{
+			scanOp = LT;
+		}
+		else if (op == LTE)
+		{
+			scanOp = GTE;
+		}
+		else if (op == EQ)
+		{
+			scanOp = EQ;
+		}
+		else if (op == NE)
+		{
+			scanOp = NE;
+		}
+
+		startTwoStatus = input2.startScan(attrDesc2.attrOffset, attrDesc2.attrLen, static_cast<Datatype>(attrDesc2.attrType), tempInsert, scanOp);
+		if (startTwoStatus != OK)
+		{
+			return startTwoStatus;
+		}
+
+		while (1)
+		{	
+			scanTwoStatus = input2.scanNext(curIdTwo, recTwo);
+			if (scanTwoStatus == FILEEOF)
+			{
+				break;
+			}
+			else if (scanTwoStatus != OK)
+			{
+				return scanTwoStatus;
+			}
+
+			totalLen = 0;
+			insert = new Record();
+			insert->data = (char *) malloc(reclen);
+			insert->length = reclen;
+
+			for (int i = 0;i < projCnt;++i)
+			{
+				relNameCheck = attrDescArray[i].relName;
+
+				if (relNameCheck == relation1)
+				{
+						memcpy(insert->data + totalLen, recOne.data + attrDescArray[i].attrOffset, attrDescArray[i].attrLen);
+				}
+				else
+				{
+					memcpy(insert->data + totalLen, recTwo.data + attrDescArray[i].attrOffset, attrDescArray[i].attrLen);
+				}
+
+				totalLen += attrDescArray[i].attrLen;
+			}
+
+			writeStatus = output.insertRecord(*insert, outRid);
+			if (writeStatus != OK)
+			{
+				return writeStatus;
+			}
+
+			free(insert->data);
+			delete insert;		
+		}
+		input2.endScan();
+	}
+	input1.endScan();
 
 	return OK;
 }
-
-
-
-
-
-
-
-
-
-
 
 
